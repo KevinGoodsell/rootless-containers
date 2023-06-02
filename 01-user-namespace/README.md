@@ -24,18 +24,34 @@ user namespaces at the same time, and receive the privileges granted by doing
 so.
 
 The first example program runs a program (specified on the command line) in a
-new user namespace.
+new user namespace. If no extra arguments are given, it instead prints its
+capabilities so we can see the effect of the new user namespace.
 
-    $ # Since there are no user mappings yet, we're nobody inside the container
-    $ go run main.go id
+Since there are no uid mappings yet, running the `id` program shows that we're
+nobody inside the namespace:
+
+    $ ./example01 id
     uid=65534(nobody) gid=65534(nogroup) groups=65534(nogroup)
 
-    $ # Files are also owned by nobody.
-    $ go run main.go ls -l
-    total 8
-    -rw-r--r-- 1 nobody nogroup 1275 May 28 22:30 main.go
-    -rw-r--r-- 1 nobody nogroup 1623 May 29 20:35 README.md
+Apparent file owners are affected in the same way, all files become owned by
+nobody:
 
-    $ # We should also have a full set of capabilities, but getpcaps doesn't show that. I'm not sure why.
-    $ go run main.go getpcaps 0
+    $ ./example01 ls -l example01.c /etc/passwd
+    -rw-r--r-- 1 nobody nogroup 2758 Apr 29 18:14 /etc/passwd
+    -rw-r--r-- 1 nobody nogroup  824 Jun  2 11:35 example01.c
+
+Running without arguments shows that we have a full set of effective and
+permitted capabilities:
+
+    $ ./example01
+    Capabilities: =ep
+
+You don't need to know how to interpret the `=ep`, just know that it means the
+process effectively has all capabilities. However, if we run getpcaps to see the
+process capabilities we'll see something different:
+
+    $ ./example01 getpcaps 0
     0: =
+
+This is because the execve syscall that is used to run a different program
+resets the capabilities. You can find all of the details is `capabilities(7)`.
