@@ -54,4 +54,4 @@ process capabilities we'll see something different:
     0: =
 
 This is because the execve syscall that is used to run a different program
-resets the capabilities. You can find all of the details is `capabilities(7)`.
+resets the capabilities. You can find all the details is `capabilities(7)`.

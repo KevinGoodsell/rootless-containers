@@ -33,6 +33,7 @@ static void write_str_to(const char *str, const char *path) {
 // namespace to the given host_id in the host.
 static void write_id_map(const char *path, intmax_t host_id) {
     char mapping[200];
+    // XXX Looks like an error, snprintf could return negative.
     int written = snprintf(mapping, sizeof(mapping), "0 %jd 1\n", host_id);
     if ((size_t)written > sizeof(mapping) - 1) {
         fputs("tried to write too many chars to file\n", stderr);
@@ -47,6 +48,8 @@ static void deny_setgroups() {
     write_str_to("deny", "/proc/self/setgroups");
 }
 
+// XXX Should just change this to stop on the first non-opt argument. Too
+// awkward to use -- all the time, or get unexpected results.
 static void usage(const char *progname) {
     printf("Run a command in a new namespace\n");
     printf("\n");
@@ -161,5 +164,6 @@ int main(int argc, char *const argv[]) {
         return EXIT_FAILURE;
     }
 
+    // XXX We should probably be returning the child's exit status here.
     return EXIT_SUCCESS;
 }

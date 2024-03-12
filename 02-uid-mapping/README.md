@@ -3,17 +3,18 @@
 `user_namespaces(7)` describes how uids (and gids) in the container can be
 mapped to the host system:
 
-> When a user namespace is created, it starts out without a mapping of user IDs (group  IDs)
-> to  the  parent  user  namespace.   The  /proc/[pid]/uid_map and /proc/[pid]/gid_map files
-> (available since Linux 3.5) expose the mappings for user and group  IDs  inside  the  user
-> namespace  for  the  process  pid.  These files can be read to view the mappings in a user
-> namespace and written to (once) to define the mappings.
+> When a user namespace is created, it starts out without a mapping of user IDs
+> (group IDs) to the parent user namespace.  The /proc/[pid]/uid_map and
+> /proc/[pid]/gid_map files (available since Linux 3.5) expose the mappings for
+> user and group IDs inside the user namespace for the process pid. These files
+> can be read to view the mappings in a user namespace and written to (once) to
+> define the mappings.
 
 This example program writes to the `uid_map` and `gid_map` files to map id 0 in
 the user namespace to the invoking user on the host. This effectively makes the
 user root inside the user namespace.
 
-Like the previouse example, this one accepts a program to run with arguments.
+Like the previous example, this one accepts a program to run with arguments.
 
 With these mappings, the `id` program shows that we are root:
 
