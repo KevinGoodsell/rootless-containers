@@ -63,16 +63,10 @@ def clone(
 _libc.sem_init.argtypes = [c_void_p, c_int, c_uint]
 _libc.sem_init.restype = c_int
 
-# XXX Given that we need to pass sem to three different funcs, should we just
-# take the c_void_p and provide a way to convert mmap to c_void_p? Kind of
-# thinking we'll just allow c_void_p | mmap for all of them.
-
 
 def _convert_sem_arg(sem: c_void_p | mmap) -> Any:
     if isinstance(sem, mmap):
         array_type = c_ubyte * len(sem)
-        # XXX Need to confirm that this works, if not it's stupid to not just
-        # use c_void_p as the return type here.
         return byref(array_type.from_buffer(sem))
 
     return sem
@@ -84,8 +78,7 @@ def sem_init(sem: c_void_p | mmap, pshared: bool, value: int) -> None:
     if value < 0:
         raise ValueError(f'value argument must be non-negative, was {value}')
 
-    p = c_int(1) if pshared else c_int(0)
-    res = _libc.sem_init(_convert_sem_arg(sem), p, value)
+    res = _libc.sem_init(_convert_sem_arg(sem), pshared, value)
 
     if res < 0:
         raise get_os_error()
