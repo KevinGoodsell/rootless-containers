@@ -6,12 +6,17 @@ from .common import load_lib, get_os_error
 
 _libcap = load_lib('cap')
 
+
+class _cap_t(ctypes.c_void_p):
+    pass
+
+
 _libcap.cap_get_proc.argtypes = []
-_libcap.cap_get_proc.restype = ctypes.c_void_p
+_libcap.cap_get_proc.restype = _cap_t
 
 
 @contextmanager
-def cap_get_proc() -> Iterator[int]:
+def cap_get_proc() -> Iterator[_cap_t]:
     caps = _libcap.cap_get_proc()
     if caps is None:
         raise get_os_error()
@@ -22,12 +27,12 @@ def cap_get_proc() -> Iterator[int]:
 
 
 _libcap.cap_to_text.argtypes = [
-        ctypes.c_void_p,
+        _cap_t,
         ctypes.POINTER(ctypes.c_ssize_t)]
 _libcap.cap_to_text.restype = ctypes.POINTER(ctypes.c_char)
 
 
-def cap_to_text(caps: int) -> bytes:
+def cap_to_text(caps: _cap_t) -> bytes:
     text = _libcap.cap_to_text(caps, None)
     if not text:
         raise get_os_error()
