@@ -20,37 +20,37 @@ granting any new capabilities in the parent namespace (usually the host system).
 
 Namespaces come in several flavors (see `namespaces(7)`), but unprivileged users
 can't create namespaces of any flavor other than "user", unless they create a
-user namespaces at the same time, and receive the privileges granted by doing
+user namespace at the same time, and receive the privileges granted by doing
 so.
 
 The first example program runs a program (specified on the command line) in a
 new user namespace. If no extra arguments are given, it instead prints its
-capabilities so we can see the effect of the new user namespace.
+capabilities, so we can see the effect of the new user namespace.
 
 Since there are no uid mappings yet, running the `id` program shows that we're
 nobody inside the namespace:
 
-    $ ./example01 id
+    $ python3 example01.py id
     uid=65534(nobody) gid=65534(nogroup) groups=65534(nogroup)
 
 Apparent file owners are affected in the same way, all files become owned by
 nobody:
 
-    $ ./example01 ls -l example01.c /etc/passwd
-    -rw-r--r-- 1 nobody nogroup 2758 Apr 29 18:14 /etc/passwd
-    -rw-r--r-- 1 nobody nogroup  824 Jun  2 11:35 example01.c
+    $ python3 example01.py ls -l example01.py /etc/passwd
+    -rw-r--r-- 1 nobody nogroup 2940 Jun 19  2023 /etc/passwd
+    -rw-r--r-- 1 nobody nogroup  564 Mar 14 20:08 example01.py
 
 Running without arguments shows that we have a full set of effective and
 permitted capabilities:
 
-    $ ./example01
+    $ python3 example01.py
     Capabilities: =ep
 
 You don't need to know how to interpret the `=ep`, just know that it means the
 process effectively has all capabilities. However, if we run getpcaps to see the
 process capabilities we'll see something different:
 
-    $ ./example01 getpcaps 0
+    $ python3 example01.py getpcaps 0
     0: =
 
 This is because the execve syscall that is used to run a different program

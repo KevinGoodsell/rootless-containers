@@ -13,13 +13,6 @@
 # Still, with the python version of clone it might actually be easier than
 # unshare/fork.
 
-# XXX Look at deny setgroups again. We omitted it here, does it potentially
-# make sense to include it?
-# - It's clearly not required or else newgidmap would fail.
-# - So that leaves a question about whether it's useful. The only potential use
-#   would be from a security perspective. I don't think I care enough about
-#   that, at least at this point. Locking down the user namespace might be
-#   nice, but that would be a future refinement.
 
 import argparse
 import mmap

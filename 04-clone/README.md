@@ -28,7 +28,3 @@ we'll switch to using `clone(2)` to create our namespaces and to create the
 first process (PID 1) inside the new namespaces. Calling `clone` is more
 involved than calling `unshare` and `fork`, so for simple cases `unshare` and
 `fork` might be preferable, but now we're moving beyond such cases.
-
-At this point I'm going to switch to using C++ for the example programs because
-there will be more need for resource allocations and string formatting going
-forward, which C++ is better suited to.
