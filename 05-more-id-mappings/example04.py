@@ -15,14 +15,42 @@
 
 
 import argparse
+import grp
+from io import TextIOBase
 import mmap
 import os
+import pwd
 import signal
 from socket import sethostname
 import subprocess
 import sys
 
 from lib import libc
+
+
+# XXX Move to lib?
+
+def read_subuids(uid: int) -> tuple[int, int]:
+    name = pwd.getpwuid(uid)[0]
+    with open('/etc/subuid', 'r') as f:
+        return read_ids(uid, name, f)
+
+
+def read_subgids(gid: int) -> tuple[int, int]:
+    name = grp.getgrgid(gid)[0]
+    with open('/etc/subgid', 'r') as f:
+        return read_ids(gid, name, f)
+
+
+def read_ids(id_: int, name: str, f: TextIOBase) -> tuple[int, int]:
+    names = [bytes(id_), name]
+    for line in f:
+        entry, start, count = line.split(':')
+        if entry in names:
+            return (int(start), int(count))
+
+    # XXX Not great
+    raise Exception('User not found')
 
 
 def main() -> int:
@@ -39,6 +67,22 @@ def main() -> int:
             help='command (and arguments) to run')
 
     args = parser.parse_args(sys.argv[1:])
+
+    uid = os.geteuid()
+    gid = os.getegid()
+
+    subuids = read_subuids(uid)
+    subgids = read_subgids(gid)
+
+    uid_maps = [
+            '0', str(uid), '1',
+            '1', str(subuids[0]), str(subuids[1]),
+    ]
+
+    gid_maps = [
+            '0', str(gid), '1',
+            '1', str(subgids[0]), str(subgids[1]),
+    ]
 
     # Make a shared memory semaphore
     sem = mmap.mmap(
@@ -63,11 +107,8 @@ def main() -> int:
             signal.SIGCHLD | libc.CLONE_NEWUSER | libc.CLONE_NEWPID |
             libc.CLONE_NEWUTS)
 
-    uid = os.geteuid()
-    gid = os.getegid()
-
-    subprocess.run(['newuidmap', str(pid), '0', str(uid), '1'], check=True)
-    subprocess.run(['newgidmap', str(pid), '0', str(gid), '1'], check=True)
+    subprocess.run(['newuidmap', str(pid)] + uid_maps, check=True)
+    subprocess.run(['newgidmap', str(pid)] + gid_maps, check=True)
 
     # Signal child that its environment is ready
     libc.sem_post(sem)

@@ -1,5 +1,6 @@
 import argparse
 import os
+import signal
 import socket
 import sys
 
@@ -40,20 +41,11 @@ def main() -> int:
     uid = os.geteuid()
     gid = os.getegid()
 
-    libc.unshare(libc.CLONE_NEWUSER | libc.CLONE_NEWPID | libc.CLONE_NEWUTS)
-
-    # We have to disable setgroups in order to write a gid_map.
-    deny_setgroups()
-    write_id_map(uid, b'/proc/self/uid_map')
-    write_id_map(gid, b'/proc/self/gid_map')
-
-    # We need a new process in the PID namespace to be PID 1, which will run
-    # until we're done with the namespaces. PID 1 exiting would be bad.
-
-    child_pid = os.fork()
-
-    if child_pid == 0:
-        # Child process
+    def child() -> int:
+        # We have to disable setgroups in order to write a gid_map.
+        deny_setgroups()
+        write_id_map(uid, b'/proc/self/uid_map')
+        write_id_map(gid, b'/proc/self/gid_map')
 
         # Set the hostname
         if args.hostname:
@@ -61,6 +53,12 @@ def main() -> int:
 
         # Run the command
         os.execvp(args.cmd[0], args.cmd)
+
+    child_pid = libc.clone(
+            child,
+            100_000,
+            signal.SIGCHLD | libc.CLONE_NEWUSER | libc.CLONE_NEWPID |
+            libc.CLONE_NEWUTS)
 
     # Parent process, wait for child
     (_, status) = os.waitpid(child_pid, 0)

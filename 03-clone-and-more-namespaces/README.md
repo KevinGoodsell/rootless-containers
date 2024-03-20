@@ -1,4 +1,4 @@
-# Part 3: More Namespaces
+# Part 3: Clone and More Namespaces
 
 In this part we'll add two additional namespaces, the UTS namespace and the PID
 namespace.
@@ -13,10 +13,15 @@ cloned process. If the namespace was created with `unshare(2)` then PID 1 will
 be the first child created in the namespace after the unshare call. See
 `pid_namespaces(7)`.
 
+We've used `unshare(2)` in previous examples, but now we'll switch to using
+`clone(2)`. This will make it possible for the parent process, running in the
+parent namespace, to take additional steps setting up the environment of the
+child process. We'll see this starting with the next part, when we begin using
+`newuidmap(1)` and `newgidmap(1)`.
+
 This example program expands on the previous example by adding the PID and UTS
 namespaces and adds more argument parsing so that the hostname can be provided
-as a command line argument. It also adds a `fork(2)` call to establish PID 1 in
-the new PID namespace, so the provided command runs as PID 1.
+as a command line argument.
 
     $ python3 example03.py --hostname container -- bash
 
