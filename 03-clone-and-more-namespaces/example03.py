@@ -58,7 +58,7 @@ def main() -> int:
             child,
             100_000,
             signal.SIGCHLD | libc.CLONE_NEWUSER | libc.CLONE_NEWPID |
-            libc.CLONE_NEWUTS)
+            libc.CLONE_NEWUTS | libc.CLONE_NEWNS)
 
     # Parent process, wait for child
     (_, status) = os.waitpid(child_pid, 0)
