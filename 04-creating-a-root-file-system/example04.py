@@ -1,22 +1,5 @@
-# XXX As we're implementing this, consider the motivation for switching to
-# clone, or rather, the motivation for not using clone in the first place.
-# Supposedly clone is more complicated. Does that actually end up being true in
-# python?
-#
-# Another consideration here: part of why clone seemed complicated was the use
-# of mmap for the stack, which isn't actually necesasry and we're not doing it
-# anymore.
-#
-# But there are a lot of complications, such as having to bundle up child
-# arguments into something that can be passed as void*.
-#
-# Still, with the python version of clone it might actually be easier than
-# unshare/fork.
-
-
 import argparse
 import grp
-from io import TextIOBase
 import mmap
 import os
 import pwd
@@ -32,25 +15,24 @@ from lib import libc
 
 def read_subuids(uid: int) -> tuple[int, int]:
     name = pwd.getpwuid(uid)[0]
-    with open('/etc/subuid', 'r') as f:
-        return read_ids(uid, name, f)
+    return read_ids(uid, name, '/etc/subuid')
 
 
 def read_subgids(gid: int) -> tuple[int, int]:
     name = grp.getgrgid(gid)[0]
-    with open('/etc/subgid', 'r') as f:
-        return read_ids(gid, name, f)
+    return read_ids(gid, name, '/etc/subgid')
 
 
-def read_ids(id_: int, name: str, f: TextIOBase) -> tuple[int, int]:
-    names = [bytes(id_), name]
-    for line in f:
-        entry, start, count = line.split(':')
-        if entry in names:
-            return (int(start), int(count))
+def read_ids(id_: int, name: str, filename: str) -> tuple[int, int]:
+    # subuid/subgid can use names or numbers, so we check for both.
+    names = [str(id_), name]
+    with open(filename, 'r') as f:
+        for line in f:
+            entry, start, count = line.split(':')
+            if entry in names:
+                return (int(start), int(count))
 
-    # XXX Not great
-    raise Exception('User not found')
+    raise Exception(f'User {name} not found in {filename}')
 
 
 def main() -> int:
@@ -59,8 +41,6 @@ def main() -> int:
     parser.add_argument(
             '--hostname',
             help='set hostname in the new namespace')
-    # Unfortunately there doesn't seem to be an option to allow all arguments
-    # after cmd to be part of cmd, so "ls -l" has to be written as "-- ls -l"
     parser.add_argument(
             'cmd',
             nargs='+',
@@ -99,13 +79,15 @@ def main() -> int:
         if args.hostname is not None:
             sethostname(args.hostname)
 
+        subprocess.run(['mount', '-t', 'proc', 'proc', '/proc'], check=True)
+
         os.execvp(args.cmd[0], args.cmd)
 
     pid = libc.clone(
             child,
             100_000,
             signal.SIGCHLD | libc.CLONE_NEWUSER | libc.CLONE_NEWPID |
-            libc.CLONE_NEWUTS)
+            libc.CLONE_NEWUTS | libc.CLONE_NEWNS)
 
     subprocess.run(['newuidmap', str(pid)] + uid_maps, check=True)
     subprocess.run(['newgidmap', str(pid)] + gid_maps, check=True)
@@ -114,8 +96,13 @@ def main() -> int:
     libc.sem_post(sem)
 
     (_, status) = os.waitpid(pid, 0)
+    exitcode = os.waitstatus_to_exitcode(status)
 
-    return os.waitstatus_to_exitcode(status)
+    if exitcode < 0:
+        print(f'child process exited with signal {-exitcode}', file=sys.stderr)
+        return 1
+
+    return exitcode
 
 
 if __name__ == '__main__':
