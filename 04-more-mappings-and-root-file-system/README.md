@@ -105,7 +105,9 @@ effect of having the extra mappings:
     Modify: 2023-09-26 23:14:36.000000000 -0700
     Change: 2024-03-25 15:45:16.155725465 -0700
      Birth: 2024-03-25 15:45:15.783734801 -0700
+
     # exit
+
     $ stat alpine-root/etc/shadow
       File: alpine-root/etc/shadow
       Size: 421       	Blocks: 8          IO Block: 4096   regular file
