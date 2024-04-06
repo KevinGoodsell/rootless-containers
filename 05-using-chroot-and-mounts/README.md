@@ -16,10 +16,10 @@ of the file could also work depending on the situation, but this approach causes
 the container file to be updated when the host file is updated, since they are
 just different views of the same file.
 
-The new example program requires an additional argument, the path to the root
+The updated example program accepts a new option to specify the path to the root
 file system:
 
-    $ python3 example05.py --hostname container ../alpine/alpine-root/ -- ash -l
+    $ python3 example05.py --hostname container --root ../alpine/alpine-root/ -- ash -l
 
 Note that now the program to run is `ash` instead of `bash`. The shell in the
 base Alpine system is `ash`, and `bash` isn't available unless you install it

@@ -12,7 +12,7 @@ The updated program also sets up the environment variables inside the container.
 
 Here's an example using the latest example program:
 
-    $ python3 06-set-user-and-groups/example06.py --user alpine --hostname container alpine/alpine-root -- bash -l
+    $ python3 06-set-user-and-groups/example06.py --user alpine --hostname container --root alpine/alpine-root -- bash -l
 
     container:~$ id
     uid=1000(alpine) gid=1000(alpine) groups=1000(alpine)

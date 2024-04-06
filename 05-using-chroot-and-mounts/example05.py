@@ -41,7 +41,7 @@ def main() -> int:
             '--hostname',
             help='set hostname in the new namespace')
     parser.add_argument(
-            'root',
+            '--root', '-r',
             help='root file system')
     parser.add_argument(
             'cmd',
@@ -82,6 +82,10 @@ def main() -> int:
             sethostname(args.hostname)
 
         mounts = [
+                ['-t', 'proc', 'proc', 'proc'],
+        ]
+
+        chroot_mounts = [
                 ['--bind', '/dev/null', 'dev/null'],
                 ['--bind', '/dev/full', 'dev/full'],
                 ['--bind', '/dev/ptmx', 'dev/ptmx'],
@@ -89,7 +93,6 @@ def main() -> int:
                 ['--bind', '/dev/urandom', 'dev/urandom'],
                 ['--bind', '/dev/zero', 'dev/zero'],
                 ['--bind', '/dev/tty', 'dev/tty'],
-                ['-t', 'proc', 'proc', 'proc'],
                 # Sysfs can't be mounted in a user namespace unless it's also
                 # in a network namespace. Apparently this has something to do
                 # with accessing network devices via /sys/class/net.
@@ -98,13 +101,20 @@ def main() -> int:
                 ['--bind', '/etc/resolv.conf', 'etc/resolv.conf'],
         ]
 
+        if args.root:
+            mount_root = args.root
+            mounts += chroot_mounts
+        else:
+            mount_root = '/'
+
         for *mount_args, target in mounts:
-            full_target = str(Path(args.root) / target)
+            full_target = str(Path(mount_root) / target)
             subprocess.run(['mount'] + mount_args + [full_target], check=True)
 
-        os.chroot(args.root)
-        # chroot doesn't actually change the current directory:
-        os.chdir(args.root)
+        if args.root:
+            os.chroot(args.root)
+            # chroot doesn't actually change the current directory:
+            os.chdir(args.root)
 
         os.execvp(args.cmd[0], args.cmd)
 
