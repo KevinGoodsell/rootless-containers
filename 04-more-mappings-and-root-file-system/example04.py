@@ -11,8 +11,6 @@ import sys
 from lib import libc
 
 
-# XXX Move to lib?
-
 def read_subuids(uid: int) -> tuple[int, int]:
     name = pwd.getpwuid(uid)[0]
     return read_ids(uid, name, '/etc/subuid')

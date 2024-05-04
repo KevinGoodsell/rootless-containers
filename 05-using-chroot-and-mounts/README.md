@@ -32,6 +32,7 @@ things like install additional software:
     fetch http://mirrors.edge.kernel.org/alpine/latest-stable/main/x86_64/APKINDEX.tar.gz
     v3.19.1-298-g03c4df03632 [http://mirrors.edge.kernel.org/alpine/latest-stable/main]
     OK: 5441 distinct packages available
+
     # apk add bash
     (1/4) Installing ncurses-terminfo-base (6.4_p20231125-r0)
     (2/4) Installing libncursesw (6.4_p20231125-r0)
