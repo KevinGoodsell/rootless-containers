@@ -2,8 +2,10 @@
 #include <sched.h>
 #include <semaphore.h>
 #include <stdio.h>
+#include <sys/mount.h>
 
-#define WRITE_CLONE_FLAG(f) do { printf(#f " = 0x%08x\n", f); } while (0)
+#define WRITE_CLONE_FLAG(f) do { printf(#f " = %#010x\n", f); } while (0)
+#define WRITE_MOUNT_FLAG(f) do { printf(#f " = %#010lx\n", (unsigned long)f); } while (0)
 
 void write_clone_flags(void) {
     WRITE_CLONE_FLAG(CLONE_CHILD_CLEARTID);
@@ -36,8 +38,35 @@ void write_clone_flags(void) {
     WRITE_CLONE_FLAG(CLONE_VM);
 }
 
+void write_mount_flags(void) {
+    WRITE_MOUNT_FLAG(MS_REMOUNT);
+    WRITE_MOUNT_FLAG(MS_BIND);
+    WRITE_MOUNT_FLAG(MS_SHARED);
+    WRITE_MOUNT_FLAG(MS_PRIVATE);
+    WRITE_MOUNT_FLAG(MS_SLAVE);
+    WRITE_MOUNT_FLAG(MS_UNBINDABLE);
+    WRITE_MOUNT_FLAG(MS_MOVE);
+    WRITE_MOUNT_FLAG(MS_DIRSYNC);
+    WRITE_MOUNT_FLAG(MS_LAZYTIME);
+    WRITE_MOUNT_FLAG(MS_MANDLOCK);
+    WRITE_MOUNT_FLAG(MS_NOATIME);
+    WRITE_MOUNT_FLAG(MS_NODEV);
+    WRITE_MOUNT_FLAG(MS_NODIRATIME);
+    WRITE_MOUNT_FLAG(MS_NOEXEC);
+    WRITE_MOUNT_FLAG(MS_NOSUID);
+    WRITE_MOUNT_FLAG(MS_RDONLY);
+    WRITE_MOUNT_FLAG(MS_REC);
+    WRITE_MOUNT_FLAG(MS_RELATIME);
+    WRITE_MOUNT_FLAG(MS_SILENT);
+    WRITE_MOUNT_FLAG(MS_STRICTATIME);
+    WRITE_MOUNT_FLAG(MS_SYNCHRONOUS);
+    WRITE_MOUNT_FLAG(MS_NOSYMFOLLOW);
+}
+
 int main(void) {
     write_clone_flags();
+    printf("\n");
+    write_mount_flags();
     printf("\n");
     printf("SIZEOF_SEM_T = %zd\n", sizeof(sem_t));
 

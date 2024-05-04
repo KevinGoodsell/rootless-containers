@@ -1,5 +1,14 @@
-from ctypes import CFUNCTYPE, byref, c_int, c_ubyte, c_uint, c_void_p
-from ctypes import create_string_buffer
+from ctypes import (
+    CFUNCTYPE,
+    byref,
+    c_char_p,
+    c_int,
+    c_ubyte,
+    c_uint,
+    c_ulong,
+    c_void_p,
+    create_string_buffer,
+)
 from mmap import mmap
 from typing import Any, Callable, cast
 
@@ -101,6 +110,23 @@ _libc.sem_post.restype = c_int
 
 def sem_post(sem: c_void_p | mmap) -> None:
     res = _libc.sem_post(_convert_sem_arg(sem))
+
+    if res < 0:
+        raise get_os_error()
+
+
+_libc.mount.argtypes = [c_char_p, c_char_p, c_char_p, c_ulong, c_void_p]
+_libc.mount.restype = c_int
+
+
+def mount(source: str, target: str, filesystemtype: str, mountflags: int,
+          data: bytes | None = None):
+    res = _libc.mount(
+            source.encode(),
+            target.encode(),
+            filesystemtype.encode(),
+            mountflags,
+            data)
 
     if res < 0:
         raise get_os_error()
