@@ -101,6 +101,8 @@ def main() -> int:
             help='command (and arguments) to run')
 
     args = parser.parse_args(sys.argv[1:])
+    if args.volume and not args.root:
+        parser.error('--volume can only be used with --root')
     volumes = parse_volumes(args.volume)
 
     uid = os.geteuid()
