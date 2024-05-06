@@ -41,6 +41,22 @@ def get_user_uid(user: str) -> int:
     return pwd.getpwnam(user).pw_uid
 
 
+def mount(source: str, target: str, filesystemtype: str,
+          mountflags: int) -> None:
+    '''
+    Like mount(2), with the added step of remounting read-only for bind mounts
+    with the MS_RDONLY flag, similar to what mount(8) does. mount(2) ignores
+    most other flags (MS_RDONLY included) when MS_BIND is present.
+    '''
+
+    libc.mount(source, target, filesystemtype, mountflags)
+
+    ro_bind = libc.MS_BIND | libc.MS_RDONLY
+    if mountflags & ro_bind == ro_bind:
+        libc.mount('', target, '',
+                   libc.MS_REMOUNT | libc.MS_BIND | libc.MS_RDONLY)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
             description='Run a command in a new namespace')
@@ -91,24 +107,29 @@ def main() -> int:
         if args.hostname is not None:
             sethostname(args.hostname)
 
+        proc_flags = (libc.MS_NOSUID | libc.MS_NODEV | libc.MS_RELATIME |
+                      libc.MS_NOEXEC)
+
         mounts = [
-                ['-t', 'proc', 'proc', 'proc'],
+                # (source, target, type, flags)
+                ('proc', 'proc', 'proc', proc_flags),
         ]
 
         chroot_mounts = [
-                ['--bind', '/dev/null', 'dev/null'],
-                ['--bind', '/dev/full', 'dev/full'],
-                ['--bind', '/dev/ptmx', 'dev/ptmx'],
-                ['--bind', '/dev/random', 'dev/random'],
-                ['--bind', '/dev/urandom', 'dev/urandom'],
-                ['--bind', '/dev/zero', 'dev/zero'],
-                ['--bind', '/dev/tty', 'dev/tty'],
+                # (source, target, type, flags)
+                ('/dev/null', 'dev/null', '', libc.MS_BIND),
+                ('/dev/full', 'dev/full', '', libc.MS_BIND),
+                ('/dev/ptmx', 'dev/ptmx', '', libc.MS_BIND),
+                ('/dev/random', 'dev/random', '', libc.MS_BIND),
+                ('/dev/urandom', 'dev/urandom', '', libc.MS_BIND),
+                ('/dev/zero', 'dev/zero', '', libc.MS_BIND),
+                ('/dev/tty', 'dev/tty', '', libc.MS_BIND),
                 # Sysfs can't be mounted in a user namespace unless it's also
                 # in a network namespace. Apparently this has something to do
                 # with accessing network devices via /sys/class/net.
-                # For some reason bind mount /sys requires --rbind.
-                ['--rbind', '/sys', 'sys'],
-                ['--bind', '/etc/resolv.conf', 'etc/resolv.conf'],
+                # For some reason bind mount /sys requires recursive.
+                ('/sys', 'sys', '', libc.MS_BIND | libc.MS_REC),
+                ('/etc/resolv.conf', 'etc/resolv.conf', '', libc.MS_BIND),
         ]
 
         if args.root:
@@ -117,9 +138,9 @@ def main() -> int:
         else:
             mount_root = '/'
 
-        for *mount_args, target in mounts:
-            full_target = str(Path(mount_root) / target)
-            subprocess.run(['mount'] + mount_args + [full_target], check=True)
+        for host_dir, cont_dir, fstype, flags in mounts:
+            full_target = str(Path(mount_root) / cont_dir)
+            mount(host_dir, full_target, fstype, flags)
 
         if args.root:
             os.chroot(args.root)

@@ -33,6 +33,22 @@ def read_ids(id_: int, name: str, filename: str) -> tuple[int, int]:
     raise Exception(f'User {name} not found in {filename}')
 
 
+def mount(source: str, target: str, filesystemtype: str,
+          mountflags: int) -> None:
+    '''
+    Like mount(2), with the added step of remounting read-only for bind mounts
+    with the MS_RDONLY flag, similar to what mount(8) does. mount(2) ignores
+    most other flags (MS_RDONLY included) when MS_BIND is present.
+    '''
+
+    libc.mount(source, target, filesystemtype, mountflags)
+
+    ro_bind = libc.MS_BIND | libc.MS_RDONLY
+    if mountflags & ro_bind == ro_bind:
+        libc.mount('', target, '',
+                   libc.MS_REMOUNT | libc.MS_BIND | libc.MS_RDONLY)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
             description='Run a command in a new namespace')
@@ -77,7 +93,10 @@ def main() -> int:
         if args.hostname is not None:
             sethostname(args.hostname)
 
-        subprocess.run(['mount', '-t', 'proc', 'proc', '/proc'], check=True)
+        proc_flags = (libc.MS_NOSUID | libc.MS_NODEV | libc.MS_RELATIME |
+                      libc.MS_NOEXEC)
+
+        mount('proc', '/proc', 'proc', proc_flags)
 
         os.execvp(args.cmd[0], args.cmd)
 
