@@ -90,6 +90,7 @@ def main() -> int:
         # Wait for parent to set up uidmap and gidmap.
         libc.sem_wait(sem)
 
+        # Set the hostname
         if args.hostname is not None:
             sethostname(args.hostname)
 
@@ -100,19 +101,19 @@ def main() -> int:
 
         os.execvp(args.cmd[0], args.cmd)
 
-    pid = libc.clone(
+    child_pid = libc.clone(
             child,
             100_000,
             signal.SIGCHLD | libc.CLONE_NEWUSER | libc.CLONE_NEWPID |
             libc.CLONE_NEWUTS | libc.CLONE_NEWNS)
 
-    subprocess.run(['newuidmap', str(pid)] + uid_maps, check=True)
-    subprocess.run(['newgidmap', str(pid)] + gid_maps, check=True)
+    subprocess.run(['newuidmap', str(child_pid)] + uid_maps, check=True)
+    subprocess.run(['newgidmap', str(child_pid)] + gid_maps, check=True)
 
     # Signal child that its environment is ready
     libc.sem_post(sem)
 
-    (_, status) = os.waitpid(pid, 0)
+    (_, status) = os.waitpid(child_pid, 0)
     exitcode = os.waitstatus_to_exitcode(status)
 
     if exitcode < 0:

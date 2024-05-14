@@ -1,7 +1,7 @@
 import argparse
 import os
 import signal
-import socket
+from socket import sethostname
 import sys
 
 from lib import libc
@@ -48,8 +48,8 @@ def main() -> int:
         write_id_map(gid, b'/proc/self/gid_map')
 
         # Set the hostname
-        if args.hostname:
-            socket.sethostname(args.hostname)
+        if args.hostname is not None:
+            sethostname(args.hostname)
 
         # Run the command
         os.execvp(args.cmd[0], args.cmd)
