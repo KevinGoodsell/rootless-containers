@@ -1,23 +1,27 @@
 # Part 4: More User Mappings, Creating a Root File System
 
 In this part we'll update the example program to map more user and group IDs,
-then we'll use the update example program to build a root file system to use in
+then we'll use the updated example program to build a root file system to use in
 the next parts.
 
 ## Updating the Example Program With Additional Mappings
 
-The example program updates the uid and gid mapping in a few ways. First, it
-switches to using `newuidmap` and `newgidmap`. Second, it reads the `subuid` and
-`subgid` files and uses them to map multiple IDs. Additionally, and unrelated to
-the ID mappings, this example program incorporates mounting the `/proc` file
-system, fixing the `ps` problems that were noted in the previous example.
+Let's walk through the changes in the example program that map more UIDs and
+GIDs inside the user namespace.
 
-The `newuidmap` and `newgidmap` programs are used instead of directly writing to
-`/proc/self/uid_map` and `/proc/self/gid_map`. This is because there are
-restrictions on writing to `uid_map` and `gid_map` that make it impossible to
-map multiple IDs without having elevated permissions, as described in
-`user_namespaces(7)`. `newuidmap` and `newgidmap` bypass the need for elevated
-permissions because they are setuid binaries.
+In order to map more IDs, we need some IDs on the host that we can map to IDs
+inside the user namespace. The files `/etc/subuid` and `/etc/subgid` provide
+these host IDs. You can find details in `subuid(5)` and `subgid(5)`. This will
+only work if your user has been assigned a set of subuids and subgids inside
+these files. The example program reads these files to find the invoking user's
+subuids and subgids.
+
+Instead of writing user and group ID mappings to the `uid_map` and `gid_map`
+files as in the previous example, we use the `newuidmap` and `newgidmap`
+programs. This is because there are restrictions on writing to `uid_map` and
+`gid_map` that make it impossible to map multiple IDs without having elevated
+permissions, as described in `user_namespaces(7)`. `newuidmap` and `newgidmap`
+bypass the need for elevated permissions because they are setuid binaries.
 
 Using these programs requires that they be invoked in the parent namespace,
 after the child namespace and process have been created, so the example program
@@ -28,19 +32,36 @@ the mappings.
 
     $ newuidmap PID USER_NS_UID PARENT_NS_UID COUNT [USER_NS_UID PARENT_NS_UID COUNT [...]]
 
-This maps `COUNT` uids starting at `USER_NS_UID` in the user namespace and
-`PARENT_NS_UID` in the parent namespace. The uids in the parent namespace have
-to be uids that the user is allowed to use, which includes the user's own uid,
-and the set of uids granted to the user in the `/etc/subuid` file.
+This maps `COUNT` UIDs starting at `USER_NS_UID` in the user namespace and
+`PARENT_NS_UID` in the parent namespace. The UIDs in the parent namespace have
+to be UIDs that the user is allowed to use, which includes the user's own UID,
+and the set of UIDs granted to the user in the `/etc/subuid` file.
 
-The same applies to `newgidmap`, and the `/etc/subgid` file.
+The same applies to `newgidmap`, and the `/etc/subgid` file. See the man pages
+`newuidmap(1)` and `newgidmap(1)` for more details.
 
-For more information, see the man pages `newuidmap(1)`, `newgidmap(1)`,
-`subuid(5)`, and `subgid(5)`.
+The previous example program unconditionally mapped the invoking user's UID and
+GID to 0 inside the user namespace. This is convenient when you want to be root
+inside the new namespace, but inconvenient if you want to be any other user. The
+new example program introduces command line options to determine how to map the
+invoking user's UID and GID, `--map-uid` and `--map-gid`. For reasons that we'll
+see later, these default to 1100. For now just think of this as reserving UID
+1100 and GID 1100 for later use.
+
+Since we no longer map the invoking user to UID 0 by default, but we still need
+to be able to act as root inside the namespace, new `setuid` and `setgid` calls
+have been added to the example program so that we're still running as root
+inside the namespace. In the future we'll add more control over this.
+
+## Other Changes in the Example Program
+
+Besides the ID mapping changes, the example program also incorporates mounting
+the `/proc` file system, fixing the `ps` problem that was noted in the previous
+part.
 
 ## Using the Example Program to Create a Root File System
 
-Now that the example program maps additional uids and gids, it can be used to
+Now that the example program maps additional UIDs and GIDS, it can be used to
 set up a root file system that can serve as the root for our pseudo-containers
 going forward. We'll follow (more or less) the instructions here for [creating
 an Alpine Linux chroot](https://wiki.alpinelinux.org/wiki/Alpine_Linux_in_a_chroot).
@@ -88,38 +109,51 @@ Prepare APK repositories:
 
 That's it for setting up the root file system.
 
-So what did the extra uid and gid mappings do for us? Well, not much that you've
+So what did the extra UID and GID mappings do for us? Well, not much that you've
 been able to see yet. You would probably see some errors during the base system
 installation if you didn't have the extra mappings because some of the
 installation needs to do things like changing file ownership, and this can only
-work if there are other ids to own the files. If you check the ownership of the
+work if there are other IDs to own the files. If you check the ownership of the
 `/etc/shadow` file inside and outside the user namespace, you'll see one small
 effect of having the extra mappings:
 
     # stat alpine-root/etc/shadow
       File: alpine-root/etc/shadow
       Size: 421       	Blocks: 8          IO Block: 4096   regular file
-    Device: 253,2	Inode: 2129703     Links: 1
+    Device: 253,2	Inode: 2129849     Links: 1
     Access: (0640/-rw-r-----)  Uid: (    0/    root)   Gid: (   42/  shadow)
     Access: 2023-09-26 23:14:36.000000000 -0700
     Modify: 2023-09-26 23:14:36.000000000 -0700
-    Change: 2024-03-25 15:45:16.155725465 -0700
-     Birth: 2024-03-25 15:45:15.783734801 -0700
+    Change: 2024-05-14 18:36:35.384483358 -0700
+     Birth: 2024-05-14 18:36:34.932494784 -0700
 
     # exit
+    exit
 
     $ stat alpine-root/etc/shadow
       File: alpine-root/etc/shadow
       Size: 421       	Blocks: 8          IO Block: 4096   regular file
-    Device: 253,2	Inode: 2129703     Links: 1
-    Access: (0640/-rw-r-----)  Uid: ( 1000/   kevin)   Gid: (1410761/ UNKNOWN)
+    Device: 253,2	Inode: 2129849     Links: 1
+    Access: (0640/-rw-r-----)  Uid: (1410720/ UNKNOWN)   Gid: (1410762/ UNKNOWN)
     Access: 2023-09-26 23:14:36.000000000 -0700
     Modify: 2023-09-26 23:14:36.000000000 -0700
-    Change: 2024-03-25 15:45:16.155725465 -0700
-     Birth: 2024-03-25 15:45:15.783734801 -0700
+    Change: 2024-05-14 18:36:35.384483358 -0700
+     Birth: 2024-05-14 18:36:34.932494784 -0700
 
 Inside the user namespace the file has ownership root:shadow, as it should.
-Outside the user namespace the owner is the current user, because that user is
-mapped to root inside the user namespace, and the group is a large number with
-no name. This is one of the current user's subgids that was mapped to the shadow
-group inside the user namespace.
+Outside the user namespace the owner and group are mapped to large numbers with
+no names. These come from the current user's subuids and subgids, and were mapped
+to the root user and the shadow group inside the user namespace.
+
+One note about the root file system we've created: if you try to delete it you
+will probably get permission errors due to files and directories being owned by
+subuids and subgids. You can use these IDs in your own user namespaces, but in
+the normal (initial) user namespace they will act like any other UID or GID. In
+order to delete the root file system, you can enter the namespace the same way
+you did to create it:
+
+    $ python3 04-more-mappings-and-root-file-system/example04.py -- bash
+
+    # cd alpine/
+
+    # rm -r alpine-root/

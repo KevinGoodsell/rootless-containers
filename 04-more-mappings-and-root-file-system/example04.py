@@ -11,26 +11,90 @@ import sys
 from lib import libc
 
 
-def read_subuids(uid: int) -> tuple[int, int]:
+def read_subuids(uid: int) -> range:
     name = pwd.getpwuid(uid)[0]
     return read_ids(uid, name, '/etc/subuid')
 
 
-def read_subgids(gid: int) -> tuple[int, int]:
+def read_subgids(gid: int) -> range:
     name = grp.getgrgid(gid)[0]
     return read_ids(gid, name, '/etc/subgid')
 
 
-def read_ids(id_: int, name: str, filename: str) -> tuple[int, int]:
+def read_ids(id_: int, name: str, filename: str) -> range:
     # subuid/subgid can use names or numbers, so we check for both.
     names = [str(id_), name]
     with open(filename, 'r') as f:
         for line in f:
             entry, start, count = line.split(':')
             if entry in names:
-                return (int(start), int(count))
+                return range(int(start), int(start) + int(count))
 
     raise Exception(f'User {name} not found in {filename}')
+
+
+def make_id_maps(
+        subids: range,
+        cont_id: int | None,
+        host_id: int) -> list[str]:
+    '''
+    Return a set of mappings formatted for use with newuidmap/newgidmap. subids
+    is a set of host ids (uids or gids) for the namespace ids to be mapped to.
+    Inside the namespace these will be mapped to 0.. until all have been used.
+    If cont_id is provided, it is skipped in this step.
+
+    cont_id and host_id define an extra mapping for one host id to one
+    container id, generally used for mapping the user's own uid and primary
+    gid. If cont_id is None no additional mapping is added.
+    '''
+    # Use an arbitrary large upper value for container ids, we'll just go until
+    # host ids are exhausted.
+    container_ids = range(10_000_000)
+    container_ranges: list[range] = []
+    host_ranges: list[range] = []
+    if cont_id is None:
+        container_ranges.append(container_ids)
+        host_ranges.append(subids)
+    else:
+        container_ranges.append(range(cont_id, cont_id + 1))
+        host_ranges.append(range(host_id, host_id + 1))
+
+        # Make sure to exclude cont_id from container_ranges.
+        c1 = range(container_ids.start, cont_id)
+        c2 = range(cont_id + 1, container_ids.stop)
+
+        # c1 and c2 can be 0-length ranges in some cases, such as cont_id == 0.
+        if c1:
+            container_ranges.append(c1)
+
+        if c2:
+            container_ranges.append(c2)
+
+        host_ranges.append(subids)
+
+    result: list[int] = []
+
+    while host_ranges:
+        # Take the first range from each, produce a mapping using as many
+        # elements of both as possible, reinsert any remainder and repeat until
+        # host_ranges is exhausted.
+        crange = container_ranges.pop(0)
+        hrange = host_ranges.pop(0)
+
+        length = min(len(crange), len(hrange))
+        result.extend([crange.start, hrange.start, length])
+
+        # Update crange and hrange
+        crange = range(crange.start + length, crange.stop)
+        hrange = range(hrange.start + length, hrange.stop)
+
+        if crange:
+            container_ranges.insert(0, crange)
+
+        if hrange:
+            host_ranges.insert(0, hrange)
+
+    return [str(x) for x in result]
 
 
 def mount(source: str, target: str, filesystemtype: str,
@@ -56,6 +120,18 @@ def main() -> int:
             '--hostname',
             help='set hostname in the new namespace')
     parser.add_argument(
+            '--map-uid', '-m',
+            type=int,
+            default=1100,
+            help="uid inside the container to which the current user's uid "
+                 "should be mapped")
+    parser.add_argument(
+            '--map-gid', '-g',
+            type=int,
+            default=1100,
+            help="gid inside the container to which the current user's gid "
+                 "should be mapped")
+    parser.add_argument(
             'cmd',
             nargs='+',
             help='command (and arguments) to run')
@@ -65,18 +141,8 @@ def main() -> int:
     uid = os.geteuid()
     gid = os.getegid()
 
-    subuids = read_subuids(uid)
-    subgids = read_subgids(gid)
-
-    uid_maps = [
-            '0', str(uid), '1',
-            '1', str(subuids[0]), str(subuids[1]),
-    ]
-
-    gid_maps = [
-            '0', str(gid), '1',
-            '1', str(subgids[0]), str(subgids[1]),
-    ]
+    uid_maps = make_id_maps(read_subuids(uid), args.map_uid, uid)
+    gid_maps = make_id_maps(read_subgids(gid), args.map_gid, gid)
 
     # Make a shared memory semaphore
     sem = mmap.mmap(
@@ -98,6 +164,9 @@ def main() -> int:
                       libc.MS_NOEXEC)
 
         mount('proc', '/proc', 'proc', proc_flags)
+
+        os.setuid(0)
+        os.setgid(0)
 
         os.execvp(args.cmd[0], args.cmd)
 
