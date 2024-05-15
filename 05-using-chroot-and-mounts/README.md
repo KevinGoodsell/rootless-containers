@@ -44,7 +44,19 @@ things like install additional software:
 
 We can also add a non-root user to use in future parts:
 
-    # adduser -s /bin/bash alpine
+    # adduser -u 1100 -s /bin/bash alpine
+
+Here we're using 1100 for the new user's UID and GID. This is the same UID and
+GID that the `--map-uid` and `--map-gid` options use by default, and we're using
+them here so that the invoking user's UID and GID will be mapped to the new
+`alpine` user's UID and GID. Later this will make it convenient to share files
+from the host system into the container. We could use any UID and GID that is
+available inside the container, as long as we specify it with the `--map-uid`
+and `--map-gid` options, and then use that ID when creating the user. However,
+the UID and GID mappings used with a given chroot should probably remain
+consistent throughout the creation and use of the chroot. Once the chroot has
+been created, changing the UID and GID mappings can result in unexpected
+ownership of files inside the chroot and that could break a lot of things.
 
 You might notice various things that are still leaking in from the host
 environment. For example, `env` may show a lot of environment variables that
@@ -52,4 +64,4 @@ aren't relevant inside the container. Depending on your groups in the host
 system, `id` might show a lot of `nobody` groups:
 
     # id
-    uid=0(root) gid=0(root) groups=65534(nobody),65534(nobody),65534(nobody),65534(nobody),65534(nobody),65534(nobody),65534(nobody),65534(nobody),65534(nobody),65534(nobody),65534(nobody),65534(nobody),65534(nobody),0(root)
+    uid=0(root) gid=0(root) groups=65534(nobody),65534(nobody),65534(nobody),65534(nobody),65534(nobody),65534(nobody),65534(nobody),65534(nobody),65534(nobody),65534(nobody),65534(nobody),65534(nobody),65534(nobody),1100(alpine)
