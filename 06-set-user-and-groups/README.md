@@ -15,7 +15,7 @@ Here's an example using the latest example program:
     $ python3 06-set-user-and-groups/example06.py --user alpine --hostname container --root alpine/alpine-root -- bash -l
 
     container:~$ id
-    uid=1000(alpine) gid=1000(alpine) groups=1000(alpine)
+    uid=1100(alpine) gid=1100(alpine) groups=1100(alpine)
 
     container:~$ pwd
     /home/alpine
