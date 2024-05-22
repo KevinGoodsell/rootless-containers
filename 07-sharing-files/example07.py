@@ -11,6 +11,7 @@ import sys
 
 from lib import libc
 
+
 def read_subuids(uid: int) -> range:
     name = pwd.getpwuid(uid)[0]
     return read_ids(uid, name, '/etc/subuid')
@@ -257,19 +258,23 @@ def main() -> int:
 
         if args.user:
             uid = get_user_uid(args.user)
-            try:
-                user_info = pwd.getpwuid(uid)
-                env['HOME'] = user_info.pw_dir
-                os.setgid(user_info.pw_gid)
-                os.initgroups(user_info.pw_name, user_info.pw_gid)
-                # Change to the user's home dir, but only if we're in a chroot.
-                # Without a chroot this is likely to fail due to permissions.
-                if args.root:
-                    os.chdir(user_info.pw_dir)
-            except KeyError:
-                # Don't require the uid to be found in passwd.
-                pass
-            os.setuid(uid)
+        else:
+            uid = os.geteuid()
+
+        try:
+            user_info = pwd.getpwuid(uid)
+            env['HOME'] = user_info.pw_dir
+            os.setgid(user_info.pw_gid)
+            os.initgroups(user_info.pw_name, user_info.pw_gid)
+            # Change to the user's home dir, but only if we're in a chroot.
+            # Without a chroot this is likely to fail due to permissions.
+            if args.root:
+                os.chdir(user_info.pw_dir)
+        except KeyError:
+            # Don't require the uid to be found in passwd.
+            pass
+
+        os.setuid(uid)
 
         os.execvpe(args.cmd[0], args.cmd, env)
 
