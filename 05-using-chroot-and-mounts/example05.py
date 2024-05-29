@@ -134,7 +134,7 @@ def main() -> int:
                  "should be mapped")
     parser.add_argument(
             '--root', '-r',
-            help='root file system')
+            help='chroot to the given root file system')
     parser.add_argument(
             'cmd',
             nargs='+',

@@ -141,10 +141,10 @@ def main() -> int:
                  "should be mapped")
     parser.add_argument(
             '--root', '-r',
-            help='root file system')
+            help='chroot to the given root file system')
     parser.add_argument(
             '--user', '-u',
-            help='set user (name or UID) inside the namespace')
+            help='set user ID (by name or UID) inside the namespace')
     parser.add_argument(
             'cmd',
             nargs='+',
