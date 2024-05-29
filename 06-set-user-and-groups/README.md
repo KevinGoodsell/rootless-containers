@@ -12,7 +12,7 @@ The updated program also sets up the environment variables inside the container.
 
 Here's an example using the latest example program:
 
-    $ python3 06-set-user-and-groups/example06.py --user root --hostname container --root alpine/alpine-root -- bash -l
+    $ python3 example06.py --hostname container --root ../alpine/alpine-root --user root -- bash -l
 
     container:~# id
     uid=0(root) gid=0(root) groups=0(root),1(bin),2(daemon),3(sys),4(adm),6(disk),10(wheel),11(floppy),20(dialout),26(tape),27(video)
@@ -37,7 +37,7 @@ Since the invoking user's UID is mapped to 1100 inside the user namespace, and
 we created the user `alpine` inside the chroot with that UID, omitting `--user`
 makes us `alpine` inside the container:
 
-    $ python3 06-set-user-and-groups/example06.py --hostname container --root alpine/alpine-root -- bash -l
+    $ python3 example06.py --hostname container --root ../alpine/alpine-root -- bash -l
 
     container:~$ id
     uid=1100(alpine) gid=1100(alpine) groups=1100(alpine)

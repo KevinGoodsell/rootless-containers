@@ -17,13 +17,13 @@ directories from the host similarly to how this was done with device nodes. The
 following example session shows a directory and the file it contains being
 shared inside the container.
 
-    $ mkdir alpine/alpine-root/home/alpine/shared
+    $ mkdir ../alpine/alpine-root/home/alpine/shared
 
-    $ mkdir shared
+    $ mkdir ../shared
 
-    $ echo "Some text" > shared/shared-file
+    $ echo "Some text" > ../shared/shared-file
 
-    $ python3 07-sharing-files/example07.py --hostname container --root alpine/alpine-root/ --volume shared:/home/alpine/shared:rw -- bash -l
+    $ python3 example07.py --hostname container --root ../alpine/alpine-root/ --volume ../shared:/home/alpine/shared:rw -- bash -l
 
     container:~$ cd shared/
 
@@ -35,7 +35,7 @@ shared inside the container.
     container:~/shared$ exit
     logout
 
-    $ cat shared/shared-file 
+    $ cat ../shared/shared-file
     Some text
     Some new text
 

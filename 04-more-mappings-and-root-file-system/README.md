@@ -66,6 +66,11 @@ set up a root file system that can serve as the root for our pseudo-containers
 going forward. We'll follow (more or less) the instructions here for [creating
 an Alpine Linux chroot](https://wiki.alpinelinux.org/wiki/Alpine_Linux_in_a_chroot).
 
+For the following steps, we'll use a directory named `alpine` in the
+repository root:
+
+    $ mkdir ../alpine ; pushd ../alpine
+
 First, choose a mirror from [this
 list](https://dl-cdn.alpinelinux.org/alpine/MIRRORS.txt). I'm using
 http://mirrors.edge.kernel.org/alpine/.
@@ -77,17 +82,22 @@ Download the file:
 
     $ curl -LO http://mirrors.edge.kernel.org/alpine/latest-stable/main/x86_64/apk-tools-static-2.14.0-r5.apk
 
-Unpack the file:
+Unpack the file, then return no the directory for part 4:
 
     $ tar -xzf apk-tools-static-2.14.0-r5.apk
+
+    $ popd
 
 Next we'll install the Alpine base system. Since this will need to perform
 privileged actions, we'll do it inside the namespace our example program
 creates:
 
-    $ python3 04-more-mappings-and-root-file-system/example04.py -- bash
+    $ python3 example04.py -- bash
 
-Now that we have root access, install the base system:
+Now that we have root access, install the base system. We'll put it in a
+subdirectory `alpine/alpine-root`:
+
+    # cd ../alpine
 
     # ./sbin/apk.static -X http://mirrors.edge.kernel.org/alpine/latest-stable/main -U --allow-untrusted -p alpine-root --initdb add alpine-base
 
@@ -130,8 +140,8 @@ effect of having the extra mappings:
     # exit
     exit
 
-    $ stat alpine-root/etc/shadow
-      File: alpine-root/etc/shadow
+    $ stat ../alpine/alpine-root/etc/shadow
+      File: ../alpine/alpine-root/etc/shadow
       Size: 421       	Blocks: 8          IO Block: 4096   regular file
     Device: 253,2	Inode: 2129849     Links: 1
     Access: (0640/-rw-r-----)  Uid: (1410720/ UNKNOWN)   Gid: (1410762/ UNKNOWN)
@@ -152,8 +162,8 @@ the normal (initial) user namespace they will act like any other UID or GID. In
 order to delete the root file system, you can enter the namespace the same way
 you did to create it:
 
-    $ python3 04-more-mappings-and-root-file-system/example04.py -- bash
+    $ python3 example04.py -- bash
 
-    # cd alpine/
+    # cd ../alpine/
 
     # rm -r alpine-root/
