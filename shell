@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# When run as a script, exec a new bash that sources this file.
+if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
+    exec /bin/bash --rcfile "$0"
+fi
+
+scriptdir=$(realpath "$(dirname "${BASH_SOURCE[0]}")")
+
+# When sourced, set up the environment.
+[[ -f /etc/bash.bashrc ]] && source /etc/bash.bashrc
+[[ -f $HOME/.bashrc ]] && source "$HOME/.bashrc"
+PS1="(rootless) $PS1"
+export PYTHONPATH="$scriptdir"
