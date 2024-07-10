@@ -120,7 +120,7 @@ _libc.mount.restype = c_int
 
 
 def mount(source: str, target: str, filesystemtype: str, mountflags: int,
-          data: bytes | None = None):
+          data: bytes | None = None) -> None:
     res = _libc.mount(
             source.encode(),
             target.encode(),
