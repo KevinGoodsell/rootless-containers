@@ -64,6 +64,7 @@ void write_mount_flags(void) {
 }
 
 int main(void) {
+    printf("# This file is generated, do not edit by hand.\n\n");
     write_clone_flags();
     printf("\n");
     write_mount_flags();

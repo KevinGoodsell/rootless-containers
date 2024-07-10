@@ -1,12 +1,13 @@
-.PHONY: tools clean
+.PHONY: all clean
 
-all:
+all: lib/libc_gen.py
 
-tools:
-	$(MAKE) -C tools
+tools/libc-vals: tools/libc-vals.c
+	gcc --std=c17 -Wall -Wextra -o $@ $^
 
-generate: tools
-	./tools/libc-vals > lib/libc_gen.py
+lib/libc_gen.py: tools/libc-vals
+	./tools/libc-vals > $@
 
 clean:
-	$(MAKE) -C tools clean
+	rm -f tools/libc-vals
+	rm -rf lib/__pycache__

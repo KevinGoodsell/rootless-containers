@@ -1,3 +1,5 @@
+# This file is generated, do not edit by hand.
+
 CLONE_CHILD_CLEARTID = 0x00200000
 CLONE_CHILD_SETTID = 0x01000000
 CLONE_DETACHED = 0x00400000
