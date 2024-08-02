@@ -84,6 +84,7 @@ Because we included the mount namespace, we can manually rectify this in the
 shell:
 
     # mount -t proc proc /proc
+
     # ps a
         PID TTY      STAT   TIME COMMAND
           1 pts/5    S      0:00 bash

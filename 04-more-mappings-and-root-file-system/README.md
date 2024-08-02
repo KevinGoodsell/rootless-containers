@@ -80,11 +80,11 @@ the `apk-tools-static` package and copy the link.
 
 Download the file:
 
-    $ curl -LO http://mirrors.edge.kernel.org/alpine/latest-stable/main/x86_64/apk-tools-static-2.14.0-r5.apk
+    $ curl -LO http://mirrors.edge.kernel.org/alpine/latest-stable/main/x86_64/apk-tools-static-2.14.4-r0.apk
 
 Unpack the file, then return no the directory for part 4:
 
-    $ tar -xzf apk-tools-static-2.14.0-r5.apk
+    $ tar -xzf apk-tools-static-2.14.4-r0.apk
 
     $ popd
 
@@ -111,6 +111,7 @@ the next part using a similar approach to device nodes.
 For now, we will create some files that we'll need later:
 
     # touch alpine-root/etc/resolv.conf
+
     # touch alpine-root/dev/{null,full,ptmx,random,urandom,zero,tty}
 
 Prepare APK repositories:
