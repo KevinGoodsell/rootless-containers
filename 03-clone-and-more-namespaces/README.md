@@ -55,17 +55,16 @@ The shell reports its PID as 1:
 
 However, `ps` doesn't show the expected processes or PIDs:
 
-    # ps a
-        PID TTY      STAT   TIME COMMAND
-        875 tty7     Ssl+ 500:41 /usr/lib/xorg/Xorg :0 -seat seat0 -auth /var/run/lightdm/root/:0 -nolisten tcp vt7 -novtswi
-     128771 tty6     Ss+    0:00 /sbin/agetty -o -p -- \u --noclear tty6 linux
-     139606 tty1     Ss+    0:00 /sbin/agetty -o -p -- \u --noclear tty1 linux
-     139609 tty2     Ss+    0:00 /sbin/agetty -o -p -- \u --noclear tty2 linux
-     139610 tty3     Ss+    0:00 /sbin/agetty -o -p -- \u --noclear tty3 linux
-     139611 tty4     Ss+    0:00 /sbin/agetty -o -p -- \u --noclear tty4 linux
-     139612 tty5     Ss+    0:00 /sbin/agetty -o -p -- \u --noclear tty5 linux
-     187808 pts/7    Ss     0:00 bash
-     ...
+    # ps
+        PID TTY          TIME CMD
+       1438 ?        00:00:02 systemd
+       1439 ?        00:00:00 (sd-pam)
+       1455 ?        00:01:21 pipewire
+       1456 ?        00:00:57 wireplumber
+       1457 ?        00:05:15 pipewire-pulse
+       1459 ?        00:00:00 gnome-keyring-d
+       1460 ?        00:00:05 dbus-daemon
+       ...
 
 This is because `ps` reads process information from the `/proc` directory, and
 at this point that directory is the same on the host and in the container. We
@@ -73,7 +72,7 @@ need our own `/proc` inside the container for this to work.
 
 In some cases `ps` will error out with this strange message:
 
-    # ps a
+    # ps
     fatal library error, lookup self
 
 This is also an artifact of `/proc` not matching the running PID namespace, `ps`
@@ -85,9 +84,9 @@ shell:
 
     # mount -t proc proc /proc
 
-    # ps a
-        PID TTY      STAT   TIME COMMAND
-          1 pts/5    S      0:00 bash
-         26 pts/5    R+     0:00 ps a
+    # ps
+        PID TTY          TIME CMD
+          1 pts/6    00:00:00 bash
+         29 pts/6    00:00:00 ps
 
 Future examples will include mounting /proc in the code.
