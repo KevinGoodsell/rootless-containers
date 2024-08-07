@@ -4,16 +4,20 @@ Namespaces provide the isolation for containers, as well as creating an
 environment where a non-privileged user can gain apparent privileges. From
 `user_namespace(7)`:
 
-> The  child  process created by clone(2) with the CLONE_NEWUSER flag starts out with a com‐
-> plete set of capabilities in the new user namespace.  Likewise, a process that  creates  a
-> new  user  namespace  using  unshare(2) or joins an existing user namespace using setns(2)
-> gains a full set of capabilities in that namespace.
+> The child process created by clone(2) with the CLONE_NEWUSER flag starts out
+> with a complete set of capabilities in the new user namespace.  Likewise, a
+> process that creates a new user namespace using unshare(2) or joins an
+> existing user namespace using setns(2) gains a full set of capabilities in
+> that namespace.
+> 
 > ...
-> Having  a capability inside a user namespace permits a process to perform operations (that
-> require privilege) only on resources governed by that namespace.  In other words, having a
-> capability  in  a user namespace permits a process to perform privileged operations on re‐
-> sources that are governed by (nonuser) namespaces owned  by  (associated  with)  the  user
-> namespace (see the next subsection).
+> 
+> Having a capability inside a user namespace permits a process to perform
+> operations (that require privilege) only on resources governed by that
+> namespace.  In other words, having a capability in a user namespace permits a
+> process to perform privileged operations on resources that are governed by
+> (nonuser) namespaces owned by (associated with) the user namespace (see the
+> next subsection).
 
 So creating a user namespace grants capabilities within that namespace, without
 granting any new capabilities in the parent namespace (usually the host system).
